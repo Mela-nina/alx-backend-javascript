@@ -1,36 +1,31 @@
 const fs = require('fs');
 
-function countStudents(path) {
-  const promise = (res, rej) => {
-    fs.readFile(path, 'utf8', (error, data) => {
-      if (error) rej(Error('Cannot load the database'));
-      const messages = [];
-      let message;
-      const content = data.toString().split('\n');
-      let students = content.filter((item) => item);
-      students = students.map((item) => item.split(','));
-      const nStudents = students.length ? students.length - 1 : 0;
-      message = `Number of students: ${nStudents}`;
-      console.log(message);
-      messages.push(message);
-      const subjects = {};
-      for (const i in students) {
-        if (i !== 0) {
-          if (!subjects[students[i][3]]) subjects[students[i][3]] = [];
-          subjects[students[i][3]].push(students[i][0]);
+async function countStudents (path) {
+  if (fs.existsSync(path)) {
+    return new Promise((resolve) => {
+      fs.readFile(path, 'utf8', (err, data) => {
+        if (err) {
+          throw Error('Cannot load the database');
         }
-      }
-      delete subjects.subject;
-      for (const key of Object.keys(subjects)) {
-        message = `Number of students in ${key}: ${
-          subjects[key].length
-        }. List: ${subjects[key].join(', ')}`;
-        console.log(message);
-        messages.push(message);
-      }
-      res(messages);
+        const result = [];
+        data.split('\n').forEach((data) => {
+          result.push(data.split(','));
+        });
+        result.shift();
+        const newis = [];
+        result.forEach((data) => newis.push([data[0], data[3]]));
+        const fields = new Set();
+        newis.forEach((item) => fields.add(item[1]));
+        const final = {};
+        fields.forEach((data) => { (final[data] = 0); });
+        newis.forEach((data) => { (final[data[1]] += 1); });
+        console.log(`Number of students: ${result.filter((check) => check.length > 3).length}`);
+        Object.keys(final).forEach((data) => console.log(`Number of students in ${data}: ${final[data]}. List: ${newis.filter((n) => n[1] === data).map((n) => n[0]).join(', ')}`));
+        resolve(result, final, newis);
+      });
     });
-  };
-  return new Promise(promise);
+  }
+  throw Error('Cannot load the database');
 }
+
 module.exports = countStudents;
